@@ -148,7 +148,7 @@ public abstract class BaseActivity extends AppCompatActivity implements OnClickL
      * @param id ViewId
      */
     public <T extends View> T $(int id) {
-        return (T) this.findViewById(id);
+        return (T) findViewById(id);
     }
 
     /**

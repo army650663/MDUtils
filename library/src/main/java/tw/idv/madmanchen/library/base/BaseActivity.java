@@ -25,7 +25,6 @@ import java.util.List;
 /**
  * Created by MadmanChen on 2016/2/16.
  * 自定義 Activity 包含常用方法
- *
  */
 public abstract class BaseActivity extends AppCompatActivity implements OnClickListener {
     public Context mContext = this;

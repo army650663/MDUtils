@@ -39,15 +39,22 @@ import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
  */
 
 public class VersionChecker extends AsyncTask<String, Void, Object> {
-
-    private String mServerUrl;
-    private HashMap<String, String> mServerDataMap;
-    private HashMap<String, String> mGooglePlayDataMap;
-    private HashMap<String, String> mUpdateSettingMap;
-    private int mType;
     private AlertDialog.Builder mUpdateView;
+
+    // 版本檢查網址
+    private String mServerUrl;
+    // 要傳送給伺服器的資料
+    private HashMap<String, String> mServerDataMap;
+    // 要比對 Google play 版本資料
+    private HashMap<String, String> mGooglePlayDataMap;
+    // Update view 設定資料
+    private HashMap<String, String> mUpdateSettingMap;
+    // 檢查的類別 Google play or Server
+    private int mType;
+    // 檢查結果回傳
     private List<SubCheck> mSubCheckList;
 
+    // 檢查類型設定 以Android annotation 代替 Enum
     public static final int GOOGLE_PLAY = 0;
     public static final int SERVER = 1;
 
@@ -56,10 +63,16 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     public @interface Type {
     }
 
+    // 檢查結果回傳介面
     public interface SubCheck {
         void onChecked(Object result);
     }
 
+    /**
+     * 建構子
+     *
+     * @param builder 以 Builder 型式建構
+     */
     private VersionChecker(Builder builder) {
         mServerUrl = builder.mServerUrl;
         mServerDataMap = builder.mServerDataMap;
@@ -67,10 +80,13 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         mUpdateSettingMap = builder.mUpdateSettingMap;
         mType = builder.mType;
         mUpdateView = builder.mUpdateView;
-
         mSubCheckList = new ArrayList<>();
     }
 
+    /**
+     * 檢查 Google play 版本
+     * <p>使用 Jsoup 抓取 Google play html 版本名稱 tag</p>
+     */
     private String checkGooglePlay() {
         String verName = null;
         try {
@@ -86,6 +102,10 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         return verName;
     }
 
+    /**
+     * 檢查 Server 版本
+     * <p>傳入參數由 PHP 取得版本</p>
+     */
     private Object checkServer() {
         return new MDHttpAsyncTask.Builder()
                 .load(mServerUrl)
@@ -93,6 +113,11 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                 .build().getResult(false);
     }
 
+    /**
+     * 開始檢查版本
+     *
+     * @param subCheck 回傳介面
+     */
     public void check(@Nullable SubCheck subCheck) {
         if (subCheck != null) {
             mSubCheckList.add(subCheck);
@@ -102,6 +127,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
 
     @Override
     protected Object doInBackground(String... params) {
+        // Handler looper 初始化
         Looper.prepare();
         switch (mType) {
             case GOOGLE_PLAY:
@@ -119,6 +145,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         for (SubCheck subCheck : mSubCheckList) {
             subCheck.onChecked(object);
         }
+        // 判斷是否顯示更新視窗
         if (mUpdateView != null && object != null) {
             switch (mType) {
                 case GOOGLE_PLAY:
@@ -127,10 +154,12 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                         mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
+                                // 開啟 Google play 程式
                                 Intent intent;
                                 try {
                                     intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + mGooglePlayDataMap.get("pkgName")));
                                 } catch (ActivityNotFoundException e) {
+                                    // 以 Url 型式開啟 Google play 網頁
                                     intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + mGooglePlayDataMap.get("pkgName")));
                                 }
                                 mUpdateView.getContext().startActivity(intent);
@@ -146,6 +175,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                         boolean result = jsonObject.optBoolean("result");
                         if (!result) {
                             String msg = jsonObject.optString("msg");
+                            // 檢查錯誤原因
                             if (msg.equals("err_ver")) {
                                 JSONObject infoJObj = jsonObject.optJSONObject("info");
                                 final String apkUrl = infoJObj.optString("apkUrl");
@@ -193,6 +223,9 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         private int mType;
         private AlertDialog.Builder mUpdateView;
 
+        /**
+         * 建構子
+         */
         public Builder() {
             mServerDataMap = new HashMap<>();
             mGooglePlayDataMap = new HashMap<>();
@@ -200,32 +233,68 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
             mType = 0;
         }
 
+        /**
+         * 加入 Google play 版本檢查參數
+         *
+         * @param pkgName 包名
+         * @param verName 版本名稱
+         */
         public Builder addGooglePlayInfo(String pkgName, String verName) {
             mGooglePlayDataMap.put("pkgName", pkgName);
             mGooglePlayDataMap.put("verName", verName);
             return this;
         }
 
+        /**
+         * 設定版本檢查 Server url
+         *
+         * @param url server url
+         */
         public Builder setServerUrl(String url) {
             mServerUrl = url;
             return this;
         }
 
+        /**
+         * 加入 Server 檢查參數
+         *
+         * @param key   鍵值
+         * @param value 值
+         */
         public Builder addServerData(String key, String value) {
             mServerDataMap.put(key, value);
             return this;
         }
 
+        /**
+         * 加入 Server 檢查參數
+         *
+         * @param dataMap 參數 Map
+         */
         public Builder addServerData(HashMap<String, String> dataMap) {
             mServerDataMap.putAll(dataMap);
             return this;
         }
 
+        /**
+         * 設定檢查的類型
+         *
+         * @param type Google play or Server
+         */
         public Builder setCheckType(@Type int type) {
             mType = type;
             return this;
         }
 
+        /**
+         * 設定更新視窗
+         *
+         * @param context       context
+         * @param title         標題
+         * @param msg           訊息
+         * @param updateBtnText 上傳按鈕的文字
+         * @param cancelable    是否可取消
+         */
         public Builder setUpdateView(final Context context, String title, String msg, String updateBtnText, boolean cancelable) {
             mUpdateView = new AlertDialog.Builder(context);
             mUpdateView.setTitle(title).setMessage(msg).setCancelable(cancelable);
@@ -233,6 +302,9 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
             return this;
         }
 
+        /**
+         * 取得 VersionChecker 實體
+         */
         public VersionChecker build() {
             return new VersionChecker(this);
         }

@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
         new VersionChecker.Builder()
                 .setCheckType(VersionChecker.SERVER)
-                .setServerUrl(urls[0])
+                .setServerUrl(urls[2])
                 .addServerData("pkgName", "com.agenttw")
                 .addServerData("verName", "1.27.060")
                 .addServerData("verCode", "28")

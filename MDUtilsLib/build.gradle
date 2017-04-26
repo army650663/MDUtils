@@ -33,5 +33,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     testCompile 'junit:junit:4.12'
     compile files('libs/jsoup-1.10.2.jar')
-    compile 'com.github.army650663:MDHttpAsyncTask:v1.0.0'
+    compile 'com.github.army650663:MDHttpAsyncTask:v1.0.1'
 }

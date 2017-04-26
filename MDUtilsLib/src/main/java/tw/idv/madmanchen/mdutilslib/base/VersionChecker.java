@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import tw.idv.madmanchen.mdhttpasynctasklib.MDHttpAsyncTask;
 import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
 
 /**
@@ -38,7 +39,6 @@ import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
  */
 
 public class VersionChecker extends AsyncTask<String, Void, Object> {
-    private static final String CHECK_URL = "http://public.hsinten.com.tw/appupdate/?pkgName=com.agenttw&verCode=28&verName=1.28.060";
 
     private String mServerUrl;
     private HashMap<String, String> mServerDataMap;

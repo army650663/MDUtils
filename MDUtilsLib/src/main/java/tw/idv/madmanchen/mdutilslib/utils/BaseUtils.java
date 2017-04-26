@@ -1,4 +1,4 @@
-package tw.idv.madmanchen.library.utils;
+package tw.idv.madmanchen.mdutilslib.utils;
 
 import android.app.Activity;
 import android.app.AlertDialog;

@@ -1,4 +1,4 @@
-package tw.idv.madmanchen.library.base;
+package tw.idv.madmanchen.mdutilslib.base;
 
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
@@ -10,7 +10,6 @@ import android.os.AsyncTask;
 import android.os.Looper;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.widget.Toast;
 
 import org.json.JSONException;
@@ -25,8 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import tw.idv.madmanchen.library.utils.FileUtils;
-import tw.idv.madmanchen.library.utils.MDHttpAsyncTask;
+import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
 
 /**
  * Author:      chenshaowei
@@ -118,7 +116,6 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     @Override
     protected void onPostExecute(final Object object) {
         super.onPostExecute(object);
-        Log.e("object", object.toString() + "");
         for (SubCheck subCheck : mSubCheckList) {
             subCheck.onChecked(object);
         }
@@ -235,7 +232,6 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
             mUpdateSettingMap.put("uBtnText", updateBtnText);
             return this;
         }
-
 
         public VersionChecker build() {
             return new VersionChecker(this);

@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 
 import java.util.HashMap;
 
-import tw.idv.madmanchen.library.base.VersionChecker;
+import tw.idv.madmanchen.mdutilslib.base.VersionChecker;
 
 public class MainActivity extends AppCompatActivity {
     Context mContext;

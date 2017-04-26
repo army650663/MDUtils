@@ -114,12 +114,12 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     }
 
     @Override
-    protected void onPostExecute(final Object object) {
+    protected void onPostExecute(Object object) {
         super.onPostExecute(object);
         for (SubCheck subCheck : mSubCheckList) {
             subCheck.onChecked(object);
         }
-        if (mUpdateView != null) {
+        if (mUpdateView != null && object != null) {
             switch (mType) {
                 case GOOGLE_PLAY:
                     String verName = object.toString();

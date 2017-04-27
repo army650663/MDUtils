@@ -179,6 +179,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                             if (msg.equals("err_ver")) {
                                 JSONObject infoJObj = jsonObject.optJSONObject("info");
                                 final String apkUrl = infoJObj.optString("apkUrl");
+
                                 mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {

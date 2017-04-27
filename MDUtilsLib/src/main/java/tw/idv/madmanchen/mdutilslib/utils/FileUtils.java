@@ -24,7 +24,7 @@ import java.net.HttpURLConnection;
  * Date         Author          version         Description
  * ---------------------------------------------------------------------
  * 2016/11/10      chenshaowei         V1.0            Create
- * Why & What is modified:
+ * What is modified:
  */
 
 public class FileUtils {
@@ -69,6 +69,12 @@ public class FileUtils {
         return data;
     }
 
+    /**
+     * 智慧選擇檔案開啟方式
+     *
+     * @param context context
+     * @param file    要開啟的檔案
+     */
     public static void smartOpenFile(Context context, File file) {
         Intent intent = new Intent();
         intent.setAction(Intent.ACTION_VIEW);

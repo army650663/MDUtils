@@ -4,7 +4,6 @@ import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.annotation.LayoutRes;
@@ -13,7 +12,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -26,16 +24,15 @@ import java.util.List;
  * Created by MadmanChen on 2016/2/16.
  * 自定義 Activity 包含常用方法
  */
-public abstract class BaseActivity extends AppCompatActivity implements OnClickListener {
-    public Context mContext = this;
-    public Intent mIntent;
-    private final int mRequestCode = 621;
-    private Receive mReceive;
-    private SharedPreferences mDefaultSP;
-    private SharedPreferences.Editor mDefaultEditor;
+public abstract class BaseActivity extends AppCompatActivity {
+    private static final int PERMISSION_CODE = 621;
 
-    public interface Receive {
-        void isGetPermission(boolean isGet);
+    public Context mContext = this;
+    private SubReqPermission mSubReqPermission;
+    private SharedPreferences mDefaultSP;
+
+    public interface SubReqPermission {
+        void repResult(boolean isGet);
     }
 
     public void setContentView(@LayoutRes int layoutResID) {
@@ -64,8 +61,7 @@ public abstract class BaseActivity extends AppCompatActivity implements OnClickL
     protected abstract void init();
 
     private void initDefaultSP() {
-        mDefaultSP = mContext.getSharedPreferences("default", MODE_PRIVATE);
-        mDefaultEditor = mDefaultSP.edit();
+        mDefaultSP = getPreferences(MODE_PRIVATE);
     }
 
     /**
@@ -129,7 +125,7 @@ public abstract class BaseActivity extends AppCompatActivity implements OnClickL
      * @return SharePreferences editor
      */
     public SharedPreferences.Editor saveValue() {
-        return mDefaultEditor;
+        return mDefaultSP.edit();
     }
 
     /**
@@ -180,7 +176,7 @@ public abstract class BaseActivity extends AppCompatActivity implements OnClickL
         View view = getCurrentFocus();
         if (view != null) {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY);
         }
     }
 
@@ -198,35 +194,24 @@ public abstract class BaseActivity extends AppCompatActivity implements OnClickL
     /**
      * Android 6.0 需向使用者取得權限
      *
-     * @param permission 權限名稱
-     *                   ex. Manifest.permission.WRITE_EXTERNAL_STORAGE
-     * @param receive    取得權限介面
+     * @param permissions      權限名稱
+     *                         ex. Manifest.permission.WRITE_EXTERNAL_STORAGE
+     * @param subReqPermission 取得權限介面
      */
-    public void getPermission(String permission, Receive receive) {
-        this.mReceive = receive;
-        if (ContextCompat.checkSelfPermission(mContext, permission) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{permission}, mRequestCode);
-        } else {
-            receive.isGetPermission(true);
-        }
-    }
-
-    public void getPermissions(String[] permissions, Receive receive) {
-        this.mReceive = receive;
-        List<String> list = new ArrayList<>();
+    public void reqPermissions(String[] permissions, SubReqPermission subReqPermission) {
+        this.mSubReqPermission = subReqPermission;
+        // Check permission
+        List<String> list = new ArrayList<>(permissions.length);
         for (String permission : permissions) {
             if (ContextCompat.checkSelfPermission(mContext, permission) != PackageManager.PERMISSION_GRANTED) {
                 list.add(permission);
             }
         }
         if (list.size() > 0) {
-            String[] permissionArr = new String[list.size()];
-            permissionArr = list.toArray(permissionArr);
-            ActivityCompat.requestPermissions(this, permissionArr, mRequestCode);
+            ActivityCompat.requestPermissions(this, list.toArray(new String[list.size()]), PERMISSION_CODE);
         } else {
-            receive.isGetPermission(true);
+            subReqPermission.repResult(true);
         }
-
     }
 
     /**
@@ -236,18 +221,16 @@ public abstract class BaseActivity extends AppCompatActivity implements OnClickL
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case mRequestCode: {
+            case PERMISSION_CODE: {
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0) {
-                    for (int grantResult : grantResults) {
-                        if (grantResult != PackageManager.PERMISSION_GRANTED) {
-                            mReceive.isGetPermission(false);
-                            return;
-                        }
+                boolean result = true;
+                for (int grantResult : grantResults) {
+                    if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                        result = false;
+                        break;
                     }
-                    mReceive.isGetPermission(true);
-                    break;
                 }
+                mSubReqPermission.repResult(result);
                 break;
             }
         }

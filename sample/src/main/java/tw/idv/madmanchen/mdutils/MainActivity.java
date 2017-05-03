@@ -1,17 +1,13 @@
 package tw.idv.madmanchen.mdutils;
 
+import android.Manifest;
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
-import java.io.File;
+import tw.idv.madmanchen.mdutilslib.base.BaseActivity;
 
-import tw.idv.madmanchen.mdutilslib.utils.IntentUtils;
-
-import static android.os.Environment.DIRECTORY_DOWNLOADS;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
     Context mContext;
 
     @Override
@@ -19,9 +15,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mContext = this;
-        File file = Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS);
-        File myFile = new File(file, "HM9999999999999.jpg");
-        startActivity(IntentUtils.shareImageIntent(mContext, myFile, myFile, myFile));
+        reqPermissions(new SubReqPermission() {
+            @Override
+            public void repResult(boolean isGet) {
+                Log.e("isGet", isGet + "");
+            }
+        }, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE);
+    }
+
+    @Override
+    protected void init() {
 
     }
 }

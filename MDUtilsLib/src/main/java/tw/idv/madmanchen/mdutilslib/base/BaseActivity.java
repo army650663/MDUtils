@@ -194,11 +194,22 @@ public abstract class BaseActivity extends AppCompatActivity {
     /**
      * Android 6.0 需向使用者取得權限
      *
+     * @param permission       權限名稱
+     *                         ex. Manifest.permission.WRITE_EXTERNAL_STORAGE
+     * @param subReqPermission 取得權限介面
+     */
+    public void requestPermission(String permission, SubReqPermission subReqPermission) {
+        requestPermissions(new String[]{permission}, subReqPermission);
+    }
+
+    /**
+     * Android 6.0 需向使用者取得權限
+     *
      * @param permissions      權限名稱
      *                         ex. Manifest.permission.WRITE_EXTERNAL_STORAGE
      * @param subReqPermission 取得權限介面
      */
-    public void reqPermissions(String[] permissions, SubReqPermission subReqPermission) {
+    public void requestPermissions(String[] permissions, SubReqPermission subReqPermission) {
         this.mSubReqPermission = subReqPermission;
         // Check permission
         List<String> list = new ArrayList<>(permissions.length);

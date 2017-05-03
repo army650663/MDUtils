@@ -14,10 +14,10 @@ import android.view.View;
  * ---------------------------------------------------------------------
  * 2016/6/2      MadmanChen         V1.0            Create
  * Why & What is modified:
- *
  */
 public class ViewHolder {
     private static final int VIEW_TAG = 1010101010;
+
     @SuppressWarnings("unchecked")
     public static <T extends View> T get(View view, int id) {
         SparseArray<View> viewHolder = (SparseArray<View>) view.getTag(VIEW_TAG);

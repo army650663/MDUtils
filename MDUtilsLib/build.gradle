@@ -6,7 +6,7 @@ group='com.github.army650663'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion "25.0.3"
 
     defaultConfig {
         minSdkVersion 15
@@ -34,4 +34,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile files('libs/jsoup-1.10.2.jar')
     compile 'com.github.army650663:MDHttpAsyncTask:v1.0.1'
+    compile files('libs/json.jar')
 }

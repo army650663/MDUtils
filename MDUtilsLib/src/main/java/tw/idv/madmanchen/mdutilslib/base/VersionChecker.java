@@ -7,22 +7,29 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Looper;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import tw.idv.madmanchen.mdhttpasynctasklib.MDHttpAsyncTask;
 import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
@@ -40,7 +47,7 @@ import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
 
 public class VersionChecker extends AsyncTask<String, Void, Object> {
     private AlertDialog.Builder mUpdateView;
-
+    long startTime;
     // 版本檢查網址
     private String mServerUrl;
     // 要傳送給伺服器的資料
@@ -99,6 +106,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        Log.i(Thread.currentThread().getName(), "Spend time : " + (System.currentTimeMillis() - startTime));
         return verName;
     }
 
@@ -106,11 +114,37 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
      * 檢查 Server 版本
      * <p>傳入參數由 PHP 取得版本</p>
      */
-    private Object checkServer() {
-        return new MDHttpAsyncTask.Builder()
-                .load(mServerUrl)
-                .addPostData(mServerDataMap)
-                .build().getResult(false);
+    private Object checkServer(String serverUrl) {
+        String result = null;
+        try {
+            URL url = new URL(serverUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoInput(true);
+            connection.setDoOutput(true);
+            connection.setChunkedStreamingMode(0);
+            if (mServerDataMap != null) {
+                BufferedOutputStream bos = new BufferedOutputStream(connection.getOutputStream());
+                bos.write(mapToPostData(mServerDataMap).getBytes());
+                bos.close();
+            }
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                BufferedInputStream bis = new BufferedInputStream(connection.getInputStream());
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[2048];
+                int bufferLength;
+                while ((bufferLength = bis.read(buffer)) > 0) {
+                    baos.write(buffer, 0, bufferLength);
+                }
+                result = baos.toString("UTF-8");
+                bis.close();
+                baos.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.i(Thread.currentThread().getName(), "Spend time : " + (System.currentTimeMillis() - startTime));
+        return result;
     }
 
     /**
@@ -122,19 +156,22 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         if (subCheck != null) {
             mSubCheckList.add(subCheck);
         }
-        executeOnExecutor(MDHttpAsyncTask.THREAD_POOL_EXECUTOR);
+        executeOnExecutor(THREAD_POOL_EXECUTOR, mServerUrl);
+    }
+
+    public Object getResult() throws ExecutionException, InterruptedException {
+        return executeOnExecutor(THREAD_POOL_EXECUTOR, mServerUrl).get();
     }
 
     @Override
     protected Object doInBackground(String... params) {
-        // Handler looper 初始化
-        Looper.prepare();
+        startTime = System.currentTimeMillis();
         switch (mType) {
             case GOOGLE_PLAY:
                 return checkGooglePlay();
 
             case SERVER:
-                return checkServer();
+                return checkServer(params[0]);
         }
         return null;
     }
@@ -216,7 +253,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
 
     }
 
-    public static final class Builder {
+    public static class Builder {
         private String mServerUrl;
         private HashMap<String, String> mServerDataMap;
         private HashMap<String, String> mGooglePlayDataMap;
@@ -310,5 +347,18 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
             return new VersionChecker(this);
         }
     }
+
+    private String mapToPostData(HashMap<String, String> postData) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Map.Entry<String, String> entry : postData.entrySet()) {
+            stringBuilder.append(entry.getKey());
+            stringBuilder.append("=");
+            stringBuilder.append(entry.getValue());
+            stringBuilder.append("&");
+        }
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        return stringBuilder.toString();
+    }
+
 
 }

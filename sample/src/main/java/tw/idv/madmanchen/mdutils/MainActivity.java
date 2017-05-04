@@ -1,30 +1,69 @@
 package tw.idv.madmanchen.mdutils;
 
-import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
-import tw.idv.madmanchen.mdutilslib.base.BaseActivity;
+import java.util.HashMap;
 
-public class MainActivity extends BaseActivity {
+import tw.idv.JSONException;
+import tw.idv.JSONObject;
+import tw.idv.madmanchen.mdhttpasynctasklib.MDHttpAsyncTask;
+import tw.idv.madmanchen.mdutilslib.base.VersionChecker;
+
+public class MainActivity extends Activity {
     Context mContext;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.e("onCreate", "onCreate");
         mContext = this;
-        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE}, new SubReqPermission() {
-            @Override
-            public void repResult(boolean isGet) {
-                Log.e("isGet", isGet + "");
-            }
-        });
+        new VersionChecker.Builder()
+                .setServerUrl("http://www.xingmerit.com.cn/appupdate/")
+                .setCheckType(VersionChecker.SERVER)
+                .addServerData("pkgName", "com.agenttw")
+                .addServerData("verCode", "27")
+                .setUpdateView(mContext, "", "", "up", false)
+                .build()
+                .check(new VersionChecker.SubCheck() {
+                    @Override
+                    public void onChecked(Object result) {
+                        Log.e("versionChecker", result.toString());
+                    }
+                });
+
+        HashMap<String, String> postData = new HashMap<>();
+        postData.put("acc", "MADMANCHEN");
+        postData.put("psd", "Codeing");
+        postData.put("page", "branchsale");
+        postData.put("act", "branchsale_getdata");
+
+       new MDHttpAsyncTask.Builder()
+                .load("http://pub.mysoqi.com/ht_analy/0028/")
+                .addPostData(postData)
+                .setLoadingView(mContext, "", "loading")
+                .build()
+                .startAll(new MDHttpAsyncTask.SubResponse() {
+                    @Override
+                    public void onResponse(Object o) {
+                        if (o != null) {
+                            try {
+                                JSONObject jsonObject = new JSONObject(o.toString());
+                                boolean result = jsonObject.optBoolean("result");
+                                String msg = jsonObject.optString("msg");
+                                Log.e("json", jsonObject.toString());
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
     }
 
-    @Override
-    protected void init() {
 
-    }
+
 }

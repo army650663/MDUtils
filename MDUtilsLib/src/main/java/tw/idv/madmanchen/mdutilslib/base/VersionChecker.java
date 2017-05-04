@@ -74,7 +74,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
 
     // 檢查結果回傳介面
     public interface SubCheck {
-        void onChecked(Object result);
+        void onChecked(boolean isSameVersion, AlertDialog.Builder updateView);
     }
 
     /**
@@ -185,9 +185,77 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     @Override
     protected void onPostExecute(Object object) {
         super.onPostExecute(object);
-        for (SubCheck subCheck : mSubCheckList) {
-            subCheck.onChecked(object);
+        if (object != null) {
+            switch (mType) {
+                case GOOGLE_PLAY:
+                    String verName = object.toString();
+                    boolean isSameVersion = verName.equals(mGooglePlayDataMap.get("verName"));
+                    mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // 開啟 Google play 程式
+                            Intent intent;
+                            try {
+                                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + mGooglePlayDataMap.get("pkgName")));
+                            } catch (ActivityNotFoundException e) {
+                                // 以 Url 型式開啟 Google play 網頁
+                                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + mGooglePlayDataMap.get("pkgName")));
+                            }
+                            mUpdateView.getContext().startActivity(intent);
+                        }
+                    });
+                    for (SubCheck subCheck : mSubCheckList) {
+                        subCheck.onChecked(isSameVersion, mUpdateView);
+                    }
+                    break;
+
+                case SERVER:
+                    try {
+                        JSONObject jsonObject = new JSONObject(object.toString());
+                        boolean result = jsonObject.optBoolean("result");
+                        final Context context = mUpdateView.getContext();
+                        if (!result) {
+                            final String msg = jsonObject.optString("msg");
+                            // 檢查錯誤原因
+                            if (msg.equals("err_ver")) {
+                                JSONObject infoJObj = jsonObject.optJSONObject("info");
+                                final String apkUrl = infoJObj.optString("apkUrl");
+                                mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                        new MDHttpAsyncTask.Builder()
+                                                .load(apkUrl)
+                                                .setLoadingView(mUpdateView.getContext(), "", "")
+                                                .setRequestType(MDHttpAsyncTask.FILE)
+                                                .setDownloadPath(mDownloadPath)
+                                                .cancelable(false)
+                                                .build()
+                                                .startAll(new MDHttpAsyncTask.SubResponse() {
+                                                    @Override
+                                                    public void onResponse(Object data) {
+                                                        if (data != null) {
+                                                            File file = (File) data;
+                                                            FileUtils.smartOpenFile(context, file);
+                                                        }
+                                                    }
+                                                });
+                                    }
+                                });
+                            } else {
+                                mUpdateView.setMessage(msg).setCancelable(true);
+                            }
+                        }
+                        for (SubCheck subCheck : mSubCheckList) {
+                            subCheck.onChecked(result, mUpdateView);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+            }
         }
+
         // 判斷是否顯示更新視窗
         if (mUpdateView != null && object != null) {
             switch (mType) {
@@ -228,7 +296,6 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
-
                                         new MDHttpAsyncTask.Builder()
                                                 .load(apkUrl)
                                                 .setLoadingView(mUpdateView.getContext(), "", "")

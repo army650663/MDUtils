@@ -47,7 +47,7 @@ import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
 
 public class VersionChecker extends AsyncTask<String, Void, Object> {
     private AlertDialog.Builder mUpdateView;
-    long startTime;
+    private long startTime;
     // 版本檢查網址
     private String mServerUrl;
     // 要傳送給伺服器的資料
@@ -159,6 +159,9 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         executeOnExecutor(THREAD_POOL_EXECUTOR, mServerUrl);
     }
 
+    /**
+     * Direct get result
+     */
     public Object getResult() throws ExecutionException, InterruptedException {
         return executeOnExecutor(THREAD_POOL_EXECUTOR, mServerUrl).get();
     }
@@ -289,6 +292,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
          * @param url server url
          */
         public Builder setServerUrl(String url) {
+            mType = SERVER;
             mServerUrl = url;
             return this;
         }

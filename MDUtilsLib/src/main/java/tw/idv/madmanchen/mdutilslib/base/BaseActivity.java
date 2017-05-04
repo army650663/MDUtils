@@ -30,6 +30,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public Context mContext = this;
     private SubReqPermission mSubReqPermission;
     private SharedPreferences mDefaultSP;
+    private SharedPreferences.Editor mEditor;
 
     public interface SubReqPermission {
         void repResult(boolean isGet);
@@ -61,7 +62,8 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected abstract void init();
 
     private void initDefaultSP() {
-        mDefaultSP = getPreferences(MODE_PRIVATE);
+        mDefaultSP = getSharedPreferences("default", MODE_PRIVATE);
+        mEditor = mDefaultSP.edit();
     }
 
     /**
@@ -125,7 +127,7 @@ public abstract class BaseActivity extends AppCompatActivity {
      * @return SharePreferences editor
      */
     public SharedPreferences.Editor saveValue() {
-        return mDefaultSP.edit();
+        return mEditor;
     }
 
     /**

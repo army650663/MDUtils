@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -58,6 +59,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     private HashMap<String, String> mUpdateSettingMap;
     // 檢查的類別 Google play or Server
     private int mType;
+    private String mDownloadPath;
     // 檢查結果回傳
     private List<SubCheck> mSubCheckList;
 
@@ -88,6 +90,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         mType = builder.mType;
         mUpdateView = builder.mUpdateView;
         mSubCheckList = new ArrayList<>();
+        mDownloadPath = builder.mDownloadPath;
     }
 
     /**
@@ -213,8 +216,9 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                     try {
                         JSONObject jsonObject = new JSONObject(object.toString());
                         boolean result = jsonObject.optBoolean("result");
+                        final Context context = mUpdateView.getContext();
                         if (!result) {
-                            String msg = jsonObject.optString("msg");
+                            final String msg = jsonObject.optString("msg");
                             // 檢查錯誤原因
                             if (msg.equals("err_ver")) {
                                 JSONObject infoJObj = jsonObject.optJSONObject("info");
@@ -224,11 +228,12 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
+
                                         new MDHttpAsyncTask.Builder()
                                                 .load(apkUrl)
                                                 .setLoadingView(mUpdateView.getContext(), "", "")
                                                 .setRequestType(MDHttpAsyncTask.FILE)
-                                                .setDownloadPath(mUpdateView.getContext().getFilesDir().getPath())
+                                                .setDownloadPath(mDownloadPath)
                                                 .cancelable(false)
                                                 .build()
                                                 .startAll(new MDHttpAsyncTask.SubResponse() {
@@ -236,7 +241,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                                                     public void onResponse(Object data) {
                                                         if (data != null) {
                                                             File file = (File) data;
-                                                            FileUtils.smartOpenFile(mUpdateView.getContext(), file);
+                                                            FileUtils.smartOpenFile(context, file);
                                                         }
                                                     }
                                                 });
@@ -244,7 +249,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                                 });
                                 mUpdateView.show();
                             } else {
-                                Toast.makeText(mUpdateView.getContext(), msg, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
                             }
                         }
                     } catch (JSONException e) {
@@ -263,6 +268,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         private HashMap<String, String> mUpdateSettingMap;
         private int mType;
         private AlertDialog.Builder mUpdateView;
+        private String mDownloadPath;
 
         /**
          * 建構子
@@ -272,6 +278,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
             mGooglePlayDataMap = new HashMap<>();
             mUpdateSettingMap = new HashMap<>();
             mType = 0;
+            mDownloadPath = Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS;
         }
 
         /**
@@ -315,6 +322,11 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
          */
         public Builder addServerData(HashMap<String, String> dataMap) {
             mServerDataMap.putAll(dataMap);
+            return this;
+        }
+
+        public Builder setDownloadPath(String path) {
+            mDownloadPath = path;
             return this;
         }
 

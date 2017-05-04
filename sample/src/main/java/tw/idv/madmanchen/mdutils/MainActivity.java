@@ -1,12 +1,12 @@
 package tw.idv.madmanchen.mdutils;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import tw.idv.madmanchen.mdutilslib.base.BaseActivity;
+import tw.idv.madmanchen.mdutilslib.base.VersionChecker;
 
 public class MainActivity extends BaseActivity {
     Context mContext;
@@ -17,12 +17,19 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
         Log.e("onCreate", "onCreate");
         mContext = this;
-        saveValue().putString("acc", "hhhiii");
-        saveValue().commit();
-        Log.e("test", getValue().getString("acc", "null"));
-        SharedPreferences preferences = getSharedPreferences("default", MODE_PRIVATE);
-        preferences.edit().putString("acc", "jjjkkk").commit();
-        preferences.edit().apply();
+        new VersionChecker.Builder()
+                .setCheckType(VersionChecker.SERVER)
+                .setServerUrl("http://www.xingmerit.com.cn/appupdate/")
+                .setUpdateView(mContext, "", "Info", "Update", false)
+                .addServerData("pkgName", "com.hsinmerit")
+                .addServerData("verCode", "9")
+                .build()
+                .check(new VersionChecker.SubCheck() {
+                    @Override
+                    public void onChecked(Object o) {
+
+                    }
+                });
 
     }
 

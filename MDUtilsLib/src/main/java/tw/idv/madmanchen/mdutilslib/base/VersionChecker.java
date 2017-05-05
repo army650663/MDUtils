@@ -1,6 +1,7 @@
 package tw.idv.madmanchen.mdutilslib.base;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -9,9 +10,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.annotation.IntDef;
-import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -48,6 +47,7 @@ import tw.idv.madmanchen.mdutilslib.utils.FileUtils;
 
 public class VersionChecker extends AsyncTask<String, Void, Object> {
     private AlertDialog.Builder mUpdateView;
+    private ProgressDialog mLoadingView;
     private long startTime;
     // 版本檢查網址
     private String mServerUrl;
@@ -89,6 +89,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         mUpdateSettingMap = builder.mUpdateSettingMap;
         mType = builder.mType;
         mUpdateView = builder.mUpdateView;
+        mLoadingView = builder.mLoadingView;
         mSubCheckList = new ArrayList<>();
         mDownloadPath = builder.mDownloadPath;
     }
@@ -146,7 +147,6 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Log.i(Thread.currentThread().getName(), "Spend time : " + (System.currentTimeMillis() - startTime));
         return result;
     }
 
@@ -155,7 +155,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
      *
      * @param subCheck 回傳介面
      */
-    public void check(@Nullable SubCheck subCheck) {
+    public void check(SubCheck subCheck) {
         if (subCheck != null) {
             mSubCheckList.add(subCheck);
         }
@@ -170,9 +170,18 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     }
 
     @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+        if (mLoadingView != null && !mLoadingView.isShowing()) {
+            mLoadingView.show();
+        }
+    }
+
+    @Override
     protected Object doInBackground(String... params) {
         startTime = System.currentTimeMillis();
         switch (mType) {
+
             case GOOGLE_PLAY:
                 return checkGooglePlay();
 
@@ -185,11 +194,16 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     @Override
     protected void onPostExecute(Object object) {
         super.onPostExecute(object);
+        if (mLoadingView != null && mLoadingView.isShowing()) {
+            mLoadingView.dismiss();
+        }
+        boolean isSameVersion;
         if (object != null) {
+
             switch (mType) {
                 case GOOGLE_PLAY:
                     String verName = object.toString();
-                    boolean isSameVersion = verName.equals(mGooglePlayDataMap.get("verName"));
+                    isSameVersion = verName.equals(mGooglePlayDataMap.get("verName"));
                     mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -212,9 +226,9 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                 case SERVER:
                     try {
                         JSONObject jsonObject = new JSONObject(object.toString());
-                        boolean result = jsonObject.optBoolean("result");
+                        isSameVersion = jsonObject.optBoolean("result");
                         final Context context = mUpdateView.getContext();
-                        if (!result) {
+                        if (!isSameVersion) {
                             final String msg = jsonObject.optString("msg");
                             // 檢查錯誤原因
                             if (msg.equals("err_ver")) {
@@ -247,77 +261,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                             }
                         }
                         for (SubCheck subCheck : mSubCheckList) {
-                            subCheck.onChecked(result, mUpdateView);
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-            }
-        }
-
-        // 判斷是否顯示更新視窗
-        if (mUpdateView != null && object != null) {
-            switch (mType) {
-                case GOOGLE_PLAY:
-                    String verName = object.toString();
-                    if (!verName.equals(mGooglePlayDataMap.get("verName"))) {
-                        mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // 開啟 Google play 程式
-                                Intent intent;
-                                try {
-                                    intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + mGooglePlayDataMap.get("pkgName")));
-                                } catch (ActivityNotFoundException e) {
-                                    // 以 Url 型式開啟 Google play 網頁
-                                    intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + mGooglePlayDataMap.get("pkgName")));
-                                }
-                                mUpdateView.getContext().startActivity(intent);
-                            }
-                        });
-                        mUpdateView.show();
-                    }
-                    break;
-
-                case SERVER:
-                    try {
-                        JSONObject jsonObject = new JSONObject(object.toString());
-                        boolean result = jsonObject.optBoolean("result");
-                        final Context context = mUpdateView.getContext();
-                        if (!result) {
-                            final String msg = jsonObject.optString("msg");
-                            // 檢查錯誤原因
-                            if (msg.equals("err_ver")) {
-                                JSONObject infoJObj = jsonObject.optJSONObject("info");
-                                final String apkUrl = infoJObj.optString("apkUrl");
-
-                                mUpdateView.setNegativeButton(mUpdateSettingMap.get("uBtnText"), new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        dialog.dismiss();
-                                        new MDHttpAsyncTask.Builder()
-                                                .load(apkUrl)
-                                                .setLoadingView(mUpdateView.getContext(), "", "")
-                                                .setRequestType(MDHttpAsyncTask.FILE)
-                                                .setDownloadPath(mDownloadPath)
-                                                .cancelable(false)
-                                                .build()
-                                                .startAll(new MDHttpAsyncTask.SubResponse() {
-                                                    @Override
-                                                    public void onResponse(Object data) {
-                                                        if (data != null) {
-                                                            File file = (File) data;
-                                                            FileUtils.smartOpenFile(context, file);
-                                                        }
-                                                    }
-                                                });
-                                    }
-                                });
-                                mUpdateView.show();
-                            } else {
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
-                            }
+                            subCheck.onChecked(isSameVersion, mUpdateView);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -335,6 +279,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         private HashMap<String, String> mUpdateSettingMap;
         private int mType;
         private AlertDialog.Builder mUpdateView;
+        private ProgressDialog mLoadingView;
         private String mDownloadPath;
 
         /**
@@ -420,6 +365,14 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
             mUpdateView = new AlertDialog.Builder(context);
             mUpdateView.setTitle(title).setMessage(msg).setCancelable(cancelable);
             mUpdateSettingMap.put("uBtnText", updateBtnText);
+            return this;
+        }
+
+        public Builder setLoadingView(Context context, String title, String msg) {
+            mLoadingView = new ProgressDialog(context);
+            mLoadingView.setTitle(title);
+            mLoadingView.setMessage(msg);
+            mLoadingView.setCancelable(false);
             return this;
         }
 

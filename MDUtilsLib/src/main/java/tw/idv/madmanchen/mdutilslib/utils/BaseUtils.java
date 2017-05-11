@@ -29,7 +29,7 @@ import java.io.IOException;
  * 2016/11/14      chenshaowei         V1.0            Create
  * Why & What is modified:
  */
-//test
+
 public class BaseUtils {
 
     public static void keepScreenOn(Activity activity) {

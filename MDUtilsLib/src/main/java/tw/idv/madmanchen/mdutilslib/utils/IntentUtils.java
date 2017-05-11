@@ -2,6 +2,7 @@ package tw.idv.madmanchen.mdutilslib.utils;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v4.content.FileProvider;
@@ -9,6 +10,7 @@ import android.support.v4.content.FileProvider;
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Author:      chenshaowei
@@ -76,6 +78,10 @@ public class IntentUtils {
         return openIntent;
     }
 
+    public static Intent openAppIntent(Context context, String packageName){
+        return context.getPackageManager().getLaunchIntentForPackage(packageName);
+    }
+
     /**
      * 分享文字 Intent
      *
@@ -86,7 +92,7 @@ public class IntentUtils {
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
         shareIntent.putExtra(Intent.EXTRA_TEXT, text);
-        shareIntent.setType("text/*");
+        shareIntent.setType("text/plain");
         return shareIntent;
     }
 
@@ -146,12 +152,24 @@ public class IntentUtils {
      * @param file    檔案
      */
     private static Uri getUriFromFile(Context context, File file) {
+        return getUriFromFile(context, file, "fileProvider");
+    }
+
+    private static Uri getUriFromFile(Context context, File file, String providerName) {
         Uri uri;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            uri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileProvider", file);
+            uri = FileProvider.getUriForFile(context, context.getPackageName() + "." + providerName, file);
         } else {
             uri = Uri.fromFile(file);
         }
         return uri;
     }
+
+    public static boolean haveIntent(Context context, Intent intent) {
+        PackageManager packageManager = context.getPackageManager();
+        List activities = packageManager.queryIntentActivities(intent,
+                PackageManager.MATCH_DEFAULT_ONLY);
+        return activities.size() > 0;
+    }
+
 }

@@ -55,9 +55,8 @@ public class BaseUtils {
 
 
     public static String getDeviceID(Context context) {
-        String deviceId = Settings.Secure.getString(context.getContentResolver(),
-                Settings.Secure.ANDROID_ID);
-        return deviceId;
+        return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+
     }
 
     public static boolean openAppFromPackageName(Context context, String packageName) {

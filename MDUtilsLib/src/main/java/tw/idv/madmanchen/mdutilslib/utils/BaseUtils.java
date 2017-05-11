@@ -2,7 +2,6 @@ package tw.idv.madmanchen.mdutilslib.utils;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -70,10 +69,8 @@ public class BaseUtils {
     }
 
     public static void openGooglePlayFromPackageName(Context context, String packageName) {
-        Intent intent;
-        try {
-            intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName));
-        } catch (ActivityNotFoundException e) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName));
+        if (!IntentUtils.haveIntent(context, intent)) {
             intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + packageName));
         }
         context.startActivity(intent);

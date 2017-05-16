@@ -61,7 +61,8 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     private int mType;
     private String mDownloadPath;
     // 檢查結果回傳
-    private List<SubCheck> mSubCheckList;
+    private List<SubVersionCheck> mSubVersionCheckList;
+    private SubVersionCheck mSubVersionCheck;
 
     // 檢查類型設定 以Android annotation 代替 Enum
     public static final int GOOGLE_PLAY = 0;
@@ -73,7 +74,10 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     }
 
     // 檢查結果回傳介面
-    public interface SubCheck {
+    public interface SubVersionCheck {
+        void same();
+        void diff(String versionName);
+        void error(String error);
         void onChecked(boolean isSameVersion, AlertDialog.Builder updateView);
     }
 
@@ -90,7 +94,7 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
         mType = builder.mType;
         mUpdateView = builder.mUpdateView;
         mLoadingView = builder.mLoadingView;
-        mSubCheckList = new ArrayList<>();
+        mSubVersionCheckList = new ArrayList<>();
         mDownloadPath = builder.mDownloadPath;
     }
 
@@ -153,12 +157,10 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
     /**
      * 開始檢查版本
      *
-     * @param subCheck 回傳介面
+     * @param subVersionCheck 回傳介面
      */
-    public void check(SubCheck subCheck) {
-        if (subCheck != null) {
-            mSubCheckList.add(subCheck);
-        }
+    public void check(SubVersionCheck subVersionCheck) {
+        mSubVersionCheck = subVersionCheck;
         executeOnExecutor(THREAD_POOL_EXECUTOR, mServerUrl);
     }
 
@@ -218,8 +220,8 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                             mUpdateView.getContext().startActivity(intent);
                         }
                     });
-                    for (SubCheck subCheck : mSubCheckList) {
-                        subCheck.onChecked(isSameVersion, mUpdateView);
+                    for (SubVersionCheck subVersionCheck : mSubVersionCheckList) {
+                        subVersionCheck.onChecked(isSameVersion, mUpdateView);
                     }
                     break;
 
@@ -260,8 +262,8 @@ public class VersionChecker extends AsyncTask<String, Void, Object> {
                                 mUpdateView.setMessage(msg).setCancelable(true);
                             }
                         }
-                        for (SubCheck subCheck : mSubCheckList) {
-                            subCheck.onChecked(isSameVersion, mUpdateView);
+                        for (SubVersionCheck subVersionCheck : mSubVersionCheckList) {
+                            subVersionCheck.onChecked(isSameVersion, mUpdateView);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();

@@ -103,6 +103,10 @@ public class FileUtils {
     }
 
     public static void smartOpenFile(Context context, File file, String providerName) {
+        smartOpenFile(context, file, providerName, null);
+    }
+
+    public static void smartOpenFile(Context context, File file, String providerName, @Nullable String chooserTitle) {
         Intent intent = new Intent();
         intent.setAction(Intent.ACTION_VIEW);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -115,7 +119,14 @@ public class FileUtils {
             uri = Uri.fromFile(file);
         }
         intent.setDataAndType(uri, HttpURLConnection.guessContentTypeFromName(file.getName()));
-        context.startActivity(intent);
+        if (intent.resolveActivity(context.getPackageManager()) != null) {
+            if (chooserTitle != null) {
+                Intent chooser = Intent.createChooser(intent, chooserTitle);
+                context.startActivity(chooser);
+            } else {
+                context.startActivity(intent);
+            }
+        }
     }
 
     /**

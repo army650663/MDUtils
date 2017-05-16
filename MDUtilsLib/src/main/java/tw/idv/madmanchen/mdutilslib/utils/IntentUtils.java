@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 import android.support.v4.content.FileProvider;
 
 import java.io.File;
@@ -24,8 +25,6 @@ import java.util.List;
  */
 
 public class IntentUtils {
-
-
     /**
      * 開啟瀏覽器 Intent
      *
@@ -35,6 +34,18 @@ public class IntentUtils {
         Intent intent = new Intent();
         intent.setAction(Intent.ACTION_VIEW);
         intent.setData(Uri.parse(url));
+        return intent;
+    }
+
+    /**
+     * 開啟 App 詳細設定頁
+     *
+     * @param packageName 包名
+     */
+    public static Intent openAppDetailSettingIntent(String packageName) {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", packageName, null);
+        intent.setData(uri);
         return intent;
     }
 
@@ -78,7 +89,7 @@ public class IntentUtils {
         return openIntent;
     }
 
-    public static Intent openAppIntent(Context context, String packageName){
+    public static Intent openAppIntent(Context context, String packageName) {
         return context.getPackageManager().getLaunchIntentForPackage(packageName);
     }
 

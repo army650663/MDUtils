@@ -10,13 +10,6 @@ import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
-import java.io.IOException;
-
 /**
  * Author:      chenshaowei.
  * Version      V1.0
@@ -74,21 +67,5 @@ public class BaseUtils {
             intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + packageName));
         }
         context.startActivity(intent);
-    }
-
-    public static String getVersionNameFromGooglePlay(String packageName) {
-        String versionName = null;
-        try {
-            Document document = Jsoup.connect("https://play.google.com/store/apps/details?id=" + packageName).get();
-            Elements elements = document.select("div.content");
-            for (Element element : elements) {
-                if (element.attr("itemprop").equals("softwareVersion")) {
-                    versionName = element.text();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return versionName;
     }
 }

@@ -99,7 +99,7 @@ public class FileUtils {
      * @param file    要開啟的檔案
      */
     public static void smartOpenFile(Context context, File file) {
-        smartOpenFile(context, file, "fileProvider");
+        smartOpenFile(context, file, "fileprovider");
     }
 
     public static void smartOpenFile(Context context, File file, String providerName) {

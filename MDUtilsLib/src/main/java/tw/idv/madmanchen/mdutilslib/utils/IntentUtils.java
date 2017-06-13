@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -198,38 +198,55 @@ public class IntentUtils {
     /**
      * 取得過濾後的分享 Intent
      *
-     * @param context            Context
-     * @param intentType         Intent 類型
-     * @param needFilterPkgNames 需要過濾的包名
+     * @param context          Context
+     * @param prototype        Intent 類型
+     * @param forbiddenChoices 需要過濾的包名
      */
-    public static Intent getFilterShareChooser(Context context, String title, Intent intentType, String... needFilterPkgNames) {
-        HashSet<String> pkgNameSet = new HashSet<>();
-        pkgNameSet.addAll(Arrays.asList(needFilterPkgNames));
-
-        List<Intent> shareIntentList = new ArrayList<>();
-        List<ResolveInfo> resolveInfoList = context.getPackageManager().queryIntentActivities(intentType, 0);
+    private static Intent generateCustomChooserIntent(Context context, String title, Intent prototype, String[] forbiddenChoices) {
+        List<Intent> targetedShareIntents = new ArrayList<>();
+        List<HashMap<String, String>> intentMetaInfo = new ArrayList<>();
         Intent chooserIntent;
 
-        for (ResolveInfo resolveInfo : resolveInfoList) {
-            if (resolveInfo == null || pkgNameSet.contains(resolveInfo.activityInfo.packageName))
-                continue;
+        Intent dummy = new Intent(prototype.getAction());
+        dummy.setType(prototype.getType());
+        List<ResolveInfo> resInfo = context.getPackageManager().queryIntentActivities(dummy, 0);
 
-            Intent intent = new Intent();
-            intent.putExtra("simpleName", resolveInfo.loadLabel(context.getPackageManager()));
-            intent.setPackage(resolveInfo.activityInfo.packageName);
-            intent.setClassName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name);
-            shareIntentList.add(intent);
-        }
-        Collections.sort(shareIntentList, new Comparator<Intent>() {
-            @Override
-            public int compare(Intent o1, Intent o2) {
-                return o1.getStringExtra("simpleName").compareTo(o2.getStringExtra("simpleName"));
+        if (!resInfo.isEmpty()) {
+            for (ResolveInfo resolveInfo : resInfo) {
+                if (resolveInfo.activityInfo == null || Arrays.asList(forbiddenChoices).contains(resolveInfo.activityInfo.packageName))
+                    continue;
+
+                HashMap<String, String> info = new HashMap<>();
+                info.put("packageName", resolveInfo.activityInfo.packageName);
+                info.put("className", resolveInfo.activityInfo.name);
+                info.put("simpleName", String.valueOf(resolveInfo.activityInfo.loadLabel(context.getPackageManager())));
+                intentMetaInfo.add(info);
             }
-        });
-        chooserIntent = Intent.createChooser(shareIntentList.remove(shareIntentList.size() - 1), title);
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, shareIntentList.toArray(new Parcelable[]{}));
 
-        return chooserIntent;
+            if (!intentMetaInfo.isEmpty()) {
+                // sorting for nice readability
+                Collections.sort(intentMetaInfo, new Comparator<HashMap<String, String>>() {
+                    @Override
+                    public int compare(HashMap<String, String> map, HashMap<String, String> map2) {
+                        return map.get("simpleName").compareTo(map2.get("simpleName"));
+                    }
+                });
+
+                // create the custom intent list
+                for (HashMap<String, String> metaInfo : intentMetaInfo) {
+                    Intent targetedShareIntent = (Intent) prototype.clone();
+                    targetedShareIntent.setPackage(metaInfo.get("packageName"));
+                    targetedShareIntent.setClassName(metaInfo.get("packageName"), metaInfo.get("className"));
+                    targetedShareIntents.add(targetedShareIntent);
+                }
+
+                chooserIntent = Intent.createChooser(targetedShareIntents.remove(targetedShareIntents.size() - 1), title);
+                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetedShareIntents.toArray(new Parcelable[]{}));
+                return chooserIntent;
+            }
+        }
+
+        return Intent.createChooser(prototype, title);
     }
 
 }

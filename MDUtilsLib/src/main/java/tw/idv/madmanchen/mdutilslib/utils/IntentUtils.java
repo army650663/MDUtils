@@ -3,14 +3,20 @@ package tw.idv.madmanchen.mdutilslib.utils;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Parcelable;
 import android.provider.Settings;
 import android.support.v4.content.FileProvider;
 
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -176,11 +182,54 @@ public class IntentUtils {
         return uri;
     }
 
+    /**
+     * 是否有可開啟的 Intent
+     *
+     * @param context Context
+     * @param intent  Intent 類型
+     */
     public static boolean haveIntent(Context context, Intent intent) {
         PackageManager packageManager = context.getPackageManager();
         List activities = packageManager.queryIntentActivities(intent,
                 PackageManager.MATCH_DEFAULT_ONLY);
         return activities.size() > 0;
+    }
+
+    /**
+     * 取得過濾後的分享 Intent
+     *
+     * @param context            Context
+     * @param intentType         Intent 類型
+     * @param needFilterPkgNames 需要過濾的包名
+     */
+    public static Intent getFilterShareChooser(Context context, String title, Intent intentType, String... needFilterPkgNames) {
+        HashSet<String> pkgNameSet = new HashSet<>();
+        pkgNameSet.addAll(Arrays.asList(needFilterPkgNames));
+
+        List<Intent> shareIntentList = new ArrayList<>();
+        List<ResolveInfo> resolveInfoList = context.getPackageManager().queryIntentActivities(intentType, 0);
+        Intent chooserIntent;
+
+        for (ResolveInfo resolveInfo : resolveInfoList) {
+            if (resolveInfo == null || pkgNameSet.contains(resolveInfo.activityInfo.packageName))
+                continue;
+
+            Intent intent = new Intent();
+            intent.putExtra("simpleName", resolveInfo.loadLabel(context.getPackageManager()));
+            intent.setPackage(resolveInfo.activityInfo.packageName);
+            intent.setClassName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name);
+            shareIntentList.add(intent);
+        }
+        Collections.sort(shareIntentList, new Comparator<Intent>() {
+            @Override
+            public int compare(Intent o1, Intent o2) {
+                return o1.getStringExtra("simpleName").compareTo(o2.getStringExtra("simpleName"));
+            }
+        });
+        chooserIntent = Intent.createChooser(shareIntentList.remove(shareIntentList.size() - 1), title);
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, shareIntentList.toArray(new Parcelable[]{}));
+
+        return chooserIntent;
     }
 
 }

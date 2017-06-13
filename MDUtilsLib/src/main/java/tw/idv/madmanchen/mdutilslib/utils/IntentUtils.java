@@ -169,7 +169,7 @@ public class IntentUtils {
      * @param file    檔案
      */
     private static Uri getUriFromFile(Context context, File file) {
-        return getUriFromFile(context, file, "fileProvider");
+        return getUriFromFile(context, file, "fileprovider");
     }
 
     private static Uri getUriFromFile(Context context, File file, String providerName) {
